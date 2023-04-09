@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        table, th, td {
+          border:1px solid black;
+          table-layout: fixed;
+        }
+
+         body{
+            width: 760px; /* how wide to make your web page */
+            background-color: teal; /* what color to make the background */
+            margin: 0 auto;
+            padding: 0;
+            font:12px/16px Verdana, sans-serif; /* default font */
+         }
+         div#main{
+            background-color: #FFF;
+            margin: 0;
+            padding: 10px;
+         }
+
+
+
+    </style>
+    <script src="http://classes.engineering.wustl.edu/cse330/content/calendar.min.js"></script>
+</head>
+<body><div id = "main">
+    <input type="text" id="username" placeholder="Username" />
+    <input type="password" id="password" placeholder="Password" />
+    <button id="login_btn">Log In</button>
+    <button id="logout_btn">Double-click to log out</button>
+    
+    <br>
+    <br>
+
+
+    <input type="text" id="usernameCreate" placeholder="Username" />
+    <input type="password" id="passwordCreate" placeholder="Password" />
+    <button id="userCreation">Create a User</button>
+
+    
+    
+
+    <div id = "test">
+        login or create an account!
+    </div>
+
+    <br><br>
+
+    <div id = "eventAddForm" >
+    
+
+
+    <!-- button to input events -->
+    Title: <input type="text" name="title" id="title">
+    Body: <input type = "text" name = "body" id = "body">
+    Time: <input type = "time" name = "time" id = "time" min = "14:00" max = "2:00">
+    <br>
+    Importance:
+    <input type = "radio" name = "importance" value = "important" /> <label for = "important">important</label> &nbsp;
+    <input type = "radio" name = "importance" value = "not important" /> <label for = "not important">not important</label> &nbsp;
+    <input type="submit" name="Save" id = "eventAddButton">
+
+
+    </div>
+    <br>
+    <!-- form to edit events -->
+    <div id = "eventEditForm">
+
+        New Title: <input type="text" name="title" id="editTitle">
+        New Body: <input type = "text" name = "body" id = "editBody">
+        New Time: <input type = "time" name = "time" id = "editTime" min = "14:00" max = "2:00">
+        <br>
+        Importance:
+        <input type = "radio" name = "editImportance" value = "important" id = "editImportant"/> <label for = "important">important</label> &nbsp;
+        <input type = "radio" name = "editImportance" value = "not important" id = "editNotImportant" /> <label for = "not important">not important</label> &nbsp;
+        
+        <input type="submit" name="Save" id = "eventEditButton">
+
+    </div>
+
+
+    <!-- button to list events in list view -->
+
+    <button id = "listViewButton"> 
+        Enter List View
+    </button>
+    <br>
+
+    <div id = "toDoList">
+    </div>
+
+    <!-- displaying month and year on calendar -->
+    <div id = "month">
+    </div>
+    <div id = "year">
+    </div>
+    
+    <!-- month changing buttons -->
+    <button id="nextMonth">Next Month</button>
+
+
+    <button id="previousMonth">Previous Month</button>
+    <div>
+        <!-- initializing calendar table -->
+        <table id="calendar" style="width:100%">
+            <tr>
+            <th>Sunday</th>  
+            <th>Sunday</th>
+            <th>Monday</th>
+            <th>Tuesday</th>
+            <th>Wednesday</th>
+            <th>Thursday</th>
+            <th>Friday</th>
+            <th>Saturday</th>
+            </tr>
+
+        
+        </table>
+
+        <p id ="instructions">
+            click on events on your calendar to manipulate them!
+        </p>
+    </div>
+
+
+
+    <script>
+
+window.onload = function() {
+
+
+
+//--------------------------------------------------------------------MONTH GENERATION
+let user_id = false;
+let isLoggedIn = false;
+let addClickChecker = null;
+let sessionToken=null;
+let currentMonth = new Month(2023, 2)
+let eventModButtonsClicked = 0;
+let username = null;
+let listViewButtonClicked = parseInt(0);
+
+//displays all events in boxes
+// we will call this in updateCalender() if logged in
+
+document.getElementById("listViewButton").style.display="none";
+document.getElementById("instructions").style.display="none";
+
+// listview button event listener
+document.getElementById("listViewButton").addEventListener("click", function(){
+    if(listViewButtonClicked==0){
+        listView(user_id);
+    }
+    listViewButtonClicked++;
+    
+}, false)
+
+//creates the list view of events given the id of the user
+function listView(user_id){
+    let xmlHttp= new XMLHttpRequest(); 
+	xmlHttp.open("POST", "displayEvents.php", true); 
+	xmlHttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded"); 
+	xmlHttp.addEventListener("load", function(event){
+
+	let jsonData = JSON.parse(event.target.responseText); 
+        console.log(jsonData);
+        if(jsonData.events!=null){
+		for(i=0;i<jsonData.events.length;i++){			
+			let event = document.createElement("p");
+            event.appendChild(document.createTextNode("Title: "+jsonData.events[i].title));
+            event.appendChild(document.createElement("br"));
+            event.appendChild(document.createTextNode("Body: "+jsonData.events[i].body));
+            event.appendChild(document.createElement("br"));
+            event.appendChild(document.createTextNode("Date: "+jsonData.events[i].date));
+            let parent = document.getElementById("toDoList");
+            parent.appendChild(event);
+
+            
+			
+            }
+		}
+        document.getElementById("toDoList").appendChild(document.createElement("br"))
+        let cancelButton = document.createElement("button");
+        cancelButton.appendChild(document.createTextNode("Collapse List View"));
+        cancelButton.id = "listViewCancelButton"
+        document.getElementById("toDoList").appendChild(cancelButton);
+        document.getElementById("listViewCancelButton").addEventListener("click", function(){
+            document.getElementById("toDoList").innerHTML = '';
+            listViewButtonClicked = parseInt(0);
+
+        },false);
+
+        
+
+
+    });
+
+
+	xmlHttp.send(null); 
+}
+
+
+//allows for each event to be edited, deleted, shared, or opened
+function eventModification(eventId){
+    
+    //creates buttons
+
+    let event = document.getElementById(eventId);
+    let buttons = document.createElement("div");
+    buttons.id = "b"+(String)(eventId);
+
+    let openButton = document.createElement("button");
+    openButton.appendChild(document.createTextNode("open"));
+    openButton.id = "o"+(String)(eventId);
+
+
+    let deleteButton = document.createElement("button");
+    deleteButton.appendChild(document.createTextNode("delete"));
+    deleteButton.id = "d"+(String)(eventId);
+
+
+    let  editButton = document.createElement("button");
+    editButton.appendChild(document.createTextNode("edit"));
+    editButton.id = "e"+(String)(eventId);
+    editButton.setAttribute("clicked",0);
+
+    let shareButton = document.createElement("button");
+    shareButton.appendChild(document.createTextNode("share"));
+    shareButton.id = "s"+(String)(eventId);
+    let shareForm = document.createElement("input");
+    shareForm.appendChild(document.createTextNode("Input the username of the person you would like to share this event with: "));
+    shareForm.id = "sf"+(String)(eventId);
+
+    let cancelButton = document.createElement("button");
+    cancelButton.appendChild(document.createTextNode("cancel"));
+    cancelButton.id = "cancelButton"+(String)(eventId);
+    
+
+    buttons.appendChild(openButton);
+    buttons.appendChild(editButton);
+    buttons.appendChild(deleteButton);
+    buttons.appendChild(shareButton);
+    buttons.appendChild(shareForm);
+    buttons.appendChild(cancelButton);
+    
+    if(event!=null){
+    event.parentNode.appendChild(buttons);
+    }
+   
+    //add event listeners for each of the buttons
+
+    openButton.addEventListener("click",function(event){
+        openEvent(this.id);
+    }
+    ,false)
+
+    shareButton.addEventListener("click",function(event){
+        
+        shareEvent(this.id);
+
+
+
+    }
+    ,false)
+    
+
+    editButton.addEventListener("click",function(event){
+        showEditForm(this.id);
+    }
+    ,false)
+
+    deleteButton.addEventListener("click",function(event){
+        deleteEvent(this.id);
+    }
+    ,false)
+
+    cancelButton.addEventListener("click", function(event){
+        document.getElementById(this.id).parentNode.parentNode.removeChild(document.getElementById(this.id).parentNode);
+        eventModButtonsClicked = 0;
+        let y = document.getElementById("eventEditForm");
+        y.style.display = "none";
+    }, false);
+
+}
+
+//fetching data to share 
+function shareEvent(buttonId){
+    let eventId = buttonId.slice(1);
+    let formId = "sf" + eventId;
+    let sharedUsername = document.getElementById(formId).value;
+    let box = document.getElementById(eventId).parentNode;
+    let childNodes = box.childNodes;
+    let tempDate = null;
+    for(let i = 0; i<childNodes.length; i++){
+        if(childNodes[i].className=="eventAdder"){
+            tempDate = childNodes[i].id;
+        }
+    }
+
+    if(sharedUsername.length<1){
+        alert("please insert a username to share");
+    }
+    else{
+         let tempData = {'eventId': eventId, 'sharedUsername': sharedUsername};
+        fetch("getEventData.php", {
+            method: 'POST',
+            body: JSON.stringify(tempData),
+            headers: { 'content-type': 'application/json'}
+    })
+        .then( response=> response.json())
+        .then(data => addEventAjax(tempDate,data))
+        .catch(err=>console.log(err));
+
+    }
+}
+
+//sends the event to the shared user
+function sendEvent(data){
+    console.log("data check  " + data)
+    let sendTitle = data.title;
+    let sendBody = data.body;
+    let sendDate = JSON.stringify(data.date);
+    let sendTime =  JSON.stringify(data.time);
+    let sendImportance = data.importance;
+    let sendUserId= data.sharedUserId;
+    console.log(sendDate);
+    console.log(sendTime);
+
+
+
+
+    let token = sessionStorage.getItem("token");
+    const eventData = { 'title':sendTitle, 'body': sendBody, 'date':sendDate, 'time':sendTime, 'importance' : sendImportance, 'sendUserId':sendUserId};     
+
+    fetch("sendEvents.php", {
+        method: 'POST',
+        body: JSON.stringify(eventData),
+        headers: { 'content-type': 'application/json'}
+    })
+    .then( response=> response.json())
+    .then(data => alert("successful send!"))
+    .catch(err=>console.log("failed send"));
+
+
+}
+
+//accesses the body and time of the event given the event's buttonId
+function openEvent(buttonId){
+    console.log(buttonId);
+    let eventId = buttonId.slice(1);
+    const openEventData = {'eventId':eventId};
+    fetch("openEvent.php",{
+        method:'POST',
+        body: JSON.stringify(openEventData),
+        headers: {'content-type':'application/json'}
+    })
+    .then(response=>response.json())
+    .then(data => openEvent1(data));
+}
+//displays the body and time of the event
+function openEvent1(data){
+    if(data.success){
+        let body = data.body;
+        let time = data.time;
+        console.log(time);
+        alert(JSON.stringify(time + ":" + body));
+    }
+}
+
+
+let y = document.getElementById("eventEditForm");
+y.style.display = "none";
+//toggles the forms to edit the title, body, and time depending on if edit has been clicked
+function showEditForm(buttonId){
+        if(document.getElementById(buttonId).getAttribute("clicked")==0){
+            let x = document.getElementById("eventEditForm");
+            x.style.display = "block";
+            document.getElementById(buttonId).setAttribute("clicked",1);
+            let editEventButton = document.getElementById("eventEditButton");
+            editEventButton.addEventListener("click", function(event){
+                console.log("gotchu");
+                editEvent(buttonId);
+            },false);
+        }
+
+        else if(document.getElementById(buttonId).getAttribute("clicked") == 1){
+            let y = document.getElementById("eventEditForm");
+            y.style.display = "none";
+            document.getElementById(buttonId).setAttribute("clicked",0);
+        }
+
+}
+
+//deletes the event given the event's buttonId to get and completely remove all elements with the eventId
+function deleteEvent(buttonId){
+    let eventId = buttonId.slice(1);
+    let token = sessionStorage.getItem("token");
+    console.log(eventId);
+    const deleteEventData = {'eventId': eventId, 'token':token};
+    fetch("deleteEvent.php",{
+        method:'POST',
+        body: JSON.stringify(deleteEventData),
+        headers: {'content-type':'application/json'}
+    })
+    .then(response=>response.json());
+    eventModButtonsClicked = 0;
+    updateCalendar();
+}
+    
+//creates the calendar every time its called, fills it with the events
+function updateCalendar(){
+    switch( currentMonth.month ){
+        case 0: 
+        document.getElementById("month").innerHTML = '<strong>' + "January" + '</strong>';
+            break;
+        case 1:
+        document.getElementById("month").innerHTML = '<strong>' + "February" + '</strong>';
+            break;
+        case 2:
+        document.getElementById("month").innerHTML = '<strong>' + "March" + '</strong>';
+            break;
+        case 3:
+        document.getElementById("month").innerHTML = '<strong>' + "April" + '</strong>';
+            break;
+        case 4:
+        document.getElementById("month").innerHTML = '<strong>' + "May" + '</strong>';
+            break;
+        case 5:
+        document.getElementById("month").innerHTML = '<strong>' + "June" + '</strong>';
+            break;
+        case 6:
+        document.getElementById("month").innerHTML = '<strong>' + "July" + '</strong>';
+            break;
+        case 7:
+        document.getElementById("month").innerHTML = '<strong>' + "August" + '</strong>';
+            break;
+        case 8:
+        document.getElementById("month").innerHTML = '<strong>' + "September" + '</strong>';
+            break;
+        case 9:
+        document.getElementById("month").innerHTML = '<strong>' + "October" + '</strong>';
+            break;
+        case 10:
+        document.getElementById("month").innerHTML = '<strong>' + "November" + '</strong>';
+            break;
+        case 11:
+        document.getElementById("month").innerHTML = '<strong>' + "December" + '</strong>';
+            break;
+    }
+
+    document.getElementById("year").innerHTML = currentMonth.year;
+
+    let weeks = currentMonth.getWeeks();
+
+    document.getElementById("calendar").innerHTML = '<table style="width:100%"><tr><th>Sunday</th><th>Monday</th><th>Tuesday</th><th>Wednesday</th><th>Thursday</th><th>Friday</th><th>Saturday</th></tr></table>';
+
+
+    for(let w in weeks){
+        let days = weeks[w].getDates();
+        // days contains normal JavaScript Date objects.
+        document.getElementById("calendar").appendChild(document.createElement('br'));
+        let currentWeek = document.getElementById("calendar").appendChild(document.createElement('tr'));
+
+        
+        for(let d in days){
+            let day = document.createElement("td");
+
+           day.style.cssText = "width: px;";
+
+            currentWeek.appendChild(day);
+            let date = days[d].getMonth()+1 + "-" + days[d].getDate();
+            day.appendChild(document.createTextNode(date));
+
+            if(isLoggedIn){
+                let addEventBtn = document.createElement("button");
+                addEventBtn.appendChild(document.createTextNode("add event"));
+                let stringYear = (String)(days[d].getFullYear());
+                let stringMonth = (String)(days[d].getMonth()+1);
+                let stringDay = (String)(days[d].getDate());
+                
+
+                let fullDate = stringYear  + "-"+stringMonth+"-" + stringDay;
+                
+                if(stringMonth.length ==1 && stringDay.length ==1){
+                    fullDate = stringYear  + "-0"+stringMonth+"-0" + stringDay;
+                }
+                else if(stringMonth.length ==1){
+    
+                    fullDate = stringYear  + "-0"+stringMonth+"-" + stringDay;
+                 }
+                else if(stringDay.length ==1){
+                    
+                    fullDate = stringYear  + "-"+stringMonth+"-0" + stringDay;
+                }
+                addEventBtn.id = fullDate;
+
+                addEventBtn.className = "eventAdder";
+                day.appendChild(addEventBtn);
+            }
+        }
+    }
+    
+
+    //toggles the button displays depending on if the user is logged in or nnot
+    let listViewButton = document.getElementById("listViewButton");
+    let loginButton = document.getElementById("login_btn"); 
+    let logoutButton = document.getElementById("logout_btn");
+    let usernameBox = document.getElementById("username");
+    let passwordBox = document.getElementById("password");
+    let usernameCreateBox = document.getElementById("usernameCreate");
+    let passwordCreateBox = document.getElementById("passwordCreate");
+    let userCreationButton = document.getElementById("userCreation");
+    const buttons = document.querySelectorAll('.eventAdder');
+    let instructions = document.getElementById("instructions");
+
+    if(isLoggedIn){
+        listViewButton.style.display="block";
+        loginButton.style.display = "none";
+        logoutButton.style.display = "block";
+        usernameBox.style.display = "none";
+        passwordBox.style.display = "none";
+        usernameCreateBox.style.display = "none";
+        passwordCreateBox.style.display = "none";
+        userCreationButton.style.display = "none";
+        instructions.style.display="block";
+
+        displayEvents(user_id);
+        const buttons = document.querySelectorAll('.eventAdder'); 
+        
+        let buttonsArray = [...buttons]; 
+        buttonsArray.forEach(button => {
+            
+            button.setAttribute("clicked", parseInt(0));
+
+            button.addEventListener('click', function addEventFormTemp(event) {
+            let buttonId = (String)(this.id);  
+            let addClicked = parseInt(button.getAttribute("clicked"));
+            if(addClicked%2==0){
+                addEventForm(buttonId);
+            }
+            else{
+                removeAddEventForm(buttonId);
+            }
+                });
+        });
+    }
+    else{ 
+        loginButton.style.display = "block";
+        logoutButton.style.display = "none";
+        usernameBox.style.display = "block";
+        passwordBox.style.display = "block";
+        usernameCreateBox.style.display = "block";
+        passwordCreateBox.style.display = "block";
+        userCreationButton.style.display = "block";
+    }
+}
+
+//loads updateCalendar when the page is first loaded
+document.addEventListener("DOMContentLoaded", updateCalendar(), false);
+
+//creates next month's calendar
+document.getElementById("nextMonth").addEventListener("click", calendarNextMonth, false);
+
+function calendarNextMonth(){
+    currentMonth = currentMonth.nextMonth();
+    updateCalendar();
+}
+
+//creates previous month's calendar
+document.getElementById("previousMonth").addEventListener("click", calendarPrevMonth, false);
+
+function calendarPrevMonth(){
+    currentMonth = currentMonth.prevMonth();
+    updateCalendar();
+}
+
+
+//--------------------------------------------------------------------LOGGING IN
+
+
+//gets the username and password values, checks them with the database
+function loginAjax(event) {
+
+    const username = document.getElementById("username").value; // Get the username from the form
+    const password = document.getElementById("password").value; // Get the password from the form
+
+    // Make a URL-encoded string for passing POST data:
+    const data = { 'username': username, 'password': password };
+
+    fetch("login_ajax.php", {
+            method: 'POST',
+            body: JSON.stringify(data),
+            headers: { 'content-type': 'application/json' }
+        })
+        .then(response => response.json())
+        .then(data => login(data))
+        .catch(err => failedLogin(err));
+}
+
+document.getElementById("login_btn").addEventListener("click", loginAjax, false);
+document.getElementById("logout_btn").addEventListener("click", logout, false);
+
+//checks if login has been successful
+function login(data){
+    
+    if(!data.success){
+        document.getElementById("test").innerHTML = "failed Login";
+    }
+    else{
+        sessionToken = data.message;
+        isLoggedIn = true;
+        user_id = data.user_id;
+        document.getElementById("test").innerHTML = "Welcome to your calendar " + data.username;
+        updateCalendar();
+    }
+}
+
+//error message if login has failed
+function failedLogin(error){
+    document.getElementById("test").innerHTML = "Login Error, try again";
+    console.log(error);
+}
+
+//function to logout
+function logout(){
+    updateCalendar();
+    sessionStorage.removeItem("token");
+    document.getElementById("listViewButton").style.display="none";
+    document.getElementById("instructions").style.display = "none";
+    isLoggedIn = false;
+    eventModButtonsClicked = 0;
+    fetch("logout.php",{});
+}
+
+
+//--------------------------------------------------------------------EVENT ADDING
+let x = document.getElementById("eventAddForm");
+x.style.display = "none";
+let currentDate = "noDate";
+
+//displays the add event form depending on whether or not the button "add event" has been clicked
+function addEventForm(date){
+
+        let x = document.getElementById("eventAddForm");
+       
+        x.innerHTML= 'Title: <input type="text" name="title" id="title">Body: <input type = "text" name = "body" id = "body"> Time: <input type = "time" name = "time" id = "time" min = "14:00" max = "2:00">  <br>Importance:<input type = "radio" name = "importance" value = "important" id = "important" /> <label for = "important">important</label> &nbsp;<input type = "radio" name = "importance" value = "not important" id = "notImportant" /> <label for = "not important">not important</label> &nbsp;<input type="submit" name="Save" id = "eventAddButton">';
+        x.style.display = "block";
+        console.log(document.getElementById(date).getAttribute("clicked"));
+        document.getElementById(date).setAttribute('style', 'background-color: yellow;');
+        buttons = document.querySelectorAll('.eventAdder'); 
+        
+        let buttonsArray = [...buttons]; 
+        buttonsArray.forEach(button => {
+            
+        if(button.id!=date){
+            button.style.display = "none";
+        }
+        });
+
+        let currentCount = parseInt(document.getElementById(date).getAttribute("clicked"));
+        document.getElementById(date).setAttribute("clicked",currentCount+parseInt(1));
+        currentDate = date;
+
+        let addEventButton = document.getElementById("eventAddButton");
+        addEventButton.addEventListener('click', function(){
+            
+            document.getElementById(date).setAttribute("clicked",0);
+            if(document.getElementById(date).getAttribute("clicked")%2==0){
+                addEventAjax(currentDate);
+            }
+            
+        }, false);
+}
+
+//when the "add event" button has been clicked, remove all other add event buttons
+function removeAddEventForm(date){
+
+        buttons = document.querySelectorAll('.eventAdder'); 
+        console.log(document.getElementById(date).getAttribute("clicked"));
+
+        let buttonsArray = [...buttons]; 
+        buttonsArray.forEach(button => {
+            
+        if(button.id!=date){
+            button.style.display = "block";
+        }
+        });
+
+        let currentCount = parseInt(document.getElementById(date).getAttribute("clicked"));
+        document.getElementById(date).setAttribute("clicked",currentCount+parseInt(1));
+
+        let x = document.getElementById("eventAddForm");
+        x.innerHTML='';
+        document.getElementById(date).setAttribute('style', 'background-color: white;');
+}
+
+//adds the inputted title, body, and date to the database
+function addEventAjax(date, data){
+   
+    let title = null;
+    let body = null;
+    let time = null;
+    let importance = null;
+    let userId = user_id;
+
+    if(data==undefined){
+        title = document.getElementById("title").value;
+        if(title.length<1){
+            alert("please insert a title");
+        }
+        body = document.getElementById("body").value;
+        time = JSON.stringify(document.getElementById("time").value);
+        let importanceSelection = document.getElementsByName("importance");
+        for(let i=0; i<importanceSelection.length; i++){
+            if(importanceSelection[i].checked){
+                importance = importanceSelection[i].value;  
+                break;            
+            }    
+        }
+        if(importance=="important"){
+            importance=1;
+        }
+        else{
+        importance=0;
+        }
+
+    }
+    else{
+        title = data.title;
+        body = data.body;
+        time = data.time;
+        date = data.date;
+        importance = data.importance;
+        userId = data.sharedUserId;
+
+    }
+    
+
+    let token = sessionStorage.getItem("token");
+    const eventData = { 'title':title, 'body':body, 'date':date, 'time':time, 'event_user_id': userId, 'importance' : importance};     
+
+    fetch("events.php", {
+        method: 'POST',
+        body: JSON.stringify(eventData),
+        headers: { 'content-type': 'application/json'}
+    })
+    .then( response=> response.json())
+    .then(data => addEvent(data))
+    .catch(err=>failedAddEvent(err));
+
+}
+
+//checks if new event has been added successfully, and if it has, displays the new event
+function addEvent(data){
+    if(data.success){
+        alert("Event added successfully");
+        let user_id = data.user_id;
+        let title = data.title;
+        let body = data.body;
+        let time = data.time;
+        let date = data.date;
+        let importance = data.importance;
+        let x = document.getElementById("eventAddForm");
+        x.innerHTML='';
+        updateCalendar();
+    }
+}
+
+//error message if event could not be added
+function failedAddEvent(error){
+    document.getElementById("test").innerHTML = "Failed to add event.";
+    console.log(error);
+}
+
+//function to edit the event
+function editEvent(buttonId){
+
+    let eventId = buttonId.slice(1); 
+    console.log(eventId);  
+    let title = document.getElementById("editTitle").value;
+    let editImportanceSelection = document.getElementsByName("editImportance");
+    let editImportance = null;
+    for(let i=0; i<editImportanceSelection.length; i++){
+        if(editImportanceSelection[i].checked){
+            editImportance = editImportanceSelection[i].value;  
+            break;            
+        }    
+    }
+    if(editImportance=="important"){
+        editImportance=1;
+    }
+    else{
+        editImportance=0;
+    }
+
+    let body = document.getElementById("editBody").value;
+    let editTime = JSON.stringify(document.getElementById("editTime").value);
+    let token = sessionStorage.getItem("token");
+
+    console.log(title);
+
+    if(title.length<1){
+        alert("please enter a title");
+    }
+    else{
+        const editEventData = { 'title':title, 'body':body, 'editTime':editTime, 'eventId':eventId, 'editImportance':editImportance, 'token':token};
+
+        fetch("editEvent.php", {
+            method: 'POST',
+            body: JSON.stringify(editEventData),
+            headers: { 'content-type': 'application/json'}
+        })
+        .then( response=> response.json())
+        .then(data => editEvent1(data));
+    }
+}
+
+//checks if event has been edited successfully, and if it has, displays the event
+function editEvent1(data){
+    if(data.success){
+        alert("Event edited successfully");
+        let y = document.getElementById("eventEditForm");
+        y.style.display = "none";
+        eventModButtonsClicked = 0;
+        eventModification(data.event_id);
+        updateCalendar();
+    }
+}
+
+//--------------------------------------------------------------------CREATING USER
+
+//takes the new user info, sends it to the database
+function createUserAjax(event) {
+
+    const username = document.getElementById("usernameCreate").value; // Get the username from the form
+    const password = document.getElementById("passwordCreate").value; // Get the password from the form
+    // Make a URL-encoded string for passing POST data:
+    const data = { 'usernameCreate': username, 'passwordCreate': password };
+
+    fetch("createUser.php", {
+            method: 'POST',
+            body: JSON.stringify(data),
+            headers: { 'content-type': 'application/json' }
+        })
+        .then(response => response.json())
+        .then(data => successfulCreation())
+        .catch(err => failedCreation());
+}
+
+document.getElementById("userCreation").addEventListener("click", createUserAjax, false);
+
+//message if user creation has been successful
+function successfulCreation(){
+    document.getElementById("test").innerHTML = "successful creation, please login with your new credentials";
+}
+
+//message if user reationo has failed
+function failedCreation(){
+    document.getElementById("test").innerHTML = "invalid account info, try again";
+}
+
+//---------------------------------------------------DISPLAYING ELEMENTS
+
+//called in updateCalendar(), fetches all of the events and then displays them
+function displayEvents(){
+	
+
+	let xmlHttpConnection = new XMLHttpRequest(); 
+	xmlHttpConnection.open("POST", "displayEvents.php", true); 
+	xmlHttpConnection.setRequestHeader("Content-Type", "application/x-www-form-urlencoded"); 
+	xmlHttpConnection.addEventListener("load", function(event){
+
+	let jsonData = JSON.parse(event.target.responseText); 
+        console.log(jsonData);
+        if(jsonData.events!=null){
+
+            for(i=0;i<jsonData.events.length;i++){			
+
+                let eventTitle = document.createElement("p");
+                eventTitle.appendChild(document.createTextNode(jsonData.events[i].title));
+                console.log(jsonData.events[i].importance);
+
+                if(jsonData.events[i].importance==1){
+                    console.log("gottem");
+                    eventTitle.style.color = "red";
+                }
+
+                if(document.getElementById(jsonData.events[i].date)!=null){
+                    
+                    let parentNode = document.getElementById(jsonData.events[i].date).parentNode;
+                    parentNode.appendChild(eventTitle);
+                    eventTitle.id = jsonData.events[i].event_id;
+                    console.log(eventTitle.id);
+                    document.getElementById(eventTitle.id).addEventListener("click", function(event){
+                        if(eventModButtonsClicked == 0){
+                            eventModButtonsClicked = 1;
+                            eventModification(this.id);
+                        }
+                    }, false);
+                }
+            }
+        }
+    }, false); 
+
+	xmlHttpConnection.send(null); 
+}
+};
+</script>
+</div></body>
+</html>
+
+
